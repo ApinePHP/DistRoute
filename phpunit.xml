@@ -1,0 +1,19 @@
+<phpunit bootstrap="vendor/autoload.php"
+         convertErrorsToExceptions="true"
+         convertNoticesToExceptions="true"
+         convertWarningsToExceptions="true"
+         strict="true">
+    <testsuites>
+        <testsuite name="DistRoute">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+    <filter>
+        <whitelist>
+            <directory src=".php">src</directory>
+        </whitelist>
+    </filter>
+    <logging>
+        <log type="coverage-html" target="coverage"/>
+    </logging>
+</phpunit>
