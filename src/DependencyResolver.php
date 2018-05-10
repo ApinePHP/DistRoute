@@ -1,6 +1,6 @@
 <?php
 /**
- * DependencyResolver
+ * DependencyInjector
  *
  * @license MIT
  * @copyright 2018 Tommy Teasdale
@@ -9,136 +9,55 @@ declare(strict_types=1);
 
 namespace Apine\DistRoute;
 
-
 use Psr\Container\ContainerInterface;
-use Psr\Http\Message\ServerRequestInterface as ServerRequest;
-use Psr\Http\Message\ServerRequestInterface;
+use ReflectionParameter;
 
+/**
+ * Class DependencyInjector
+ *
+ * @package Apine\DistRoute
+ */
 class DependencyResolver
 {
-    /**
-     * @param ServerRequest $request
-     * @param Route $route
-     *
-     * @return array
-     */
-    public static function mapParametersForRequest (ServerRequest $request, Route $route)
+    private $container;
+    
+    public function __construct(ContainerInterface $container = null)
     {
-        return array_merge(
-            $request->getQueryParams(),
-            self::resolveParameters($request, $route)
-        );
+        $this->container = $container;
     }
     
     /**
-     * @param ServerRequest  $request
-     * @param Route $route
+     * @param ReflectionParameter $parameter
+     * @param array               $arguments
      *
-     * @return array
+     * @return mixed
      */
-    public static function resolveParameters (ServerRequest $request, Route $route)
+    public function resolve(ReflectionParameter $parameter, array $arguments = [])
     {
-        $parameters = [];
-        $requestString = $request->getUri()->getPath();
+        $name = $parameter->getName();
+        $type = $parameter->getType();
     
-        // Compose the regular expression from the uri and the parameter definitions
-        $regex = '/^' . str_ireplace('/', '\\/', $route->uri) . '$/';
-    
-        array_walk($route->parameters, function (ParameterDefinition $parameter) use (&$regex) {
-            if($parameter->optional) {
-                $regex = preg_replace('/\{(\??)' . $parameter->name . '(:(\(.+?\)))?\}/', '(\/?' . $parameter->pattern . ')?', $regex);
+        if (isset($arguments[$name])) {
+            if ($type !== null && !$type->isBuiltin()) {
+                $class = (string)$type;
+                $value = new $class($arguments[$name]);
             } else {
-                $regex = preg_replace('/\{' . $parameter->name . '(:(\(.+?\)))?\}/', $parameter->pattern, $regex);
+                $value = $arguments[$name];
             }
-        });
+        } else {
+            $value = null;
     
-        $results = preg_match($regex, $requestString, $matches);
-    
-        if ($results === 1) {
-            foreach ($route->parameters as $key => $parameter) {
-                if ($parameter->optional) {
-                    $index = $key+2;
-                } else {
-                    $index = $key+1;
-                }
-                
-                if (isset($matches[$index])) {
-                    $parameters[$parameter->name] = $matches[$index];
+            if ($this->container instanceof ContainerInterface && !$type->isBuiltin()) {
+                if ($this->container->has((string)$type)) {
+                    $value = $this->container->get((string)$type);
                 }
             }
-        }
-    
-        return $parameters;
-    }
-    
-    /**
-     * @param ContainerInterface $container
-     * @param array              $arguments
-     *
-     * @return array
-     */
-    public static function mapConstructorArguments(ContainerInterface $container, array $arguments)
-    {
-        $parameters = array();
-        
-        foreach ($arguments as $arg) {
-            $default = $arg->isDefaultValueAvailable() ? $arg->getDefaultValue() : null;
-            $parameter = new Parameter((string) $arg->getType(), (string) $arg->getName(), $default);
-            $parameters[] = self::getContainerServiceForParam($container, $parameter);
-        }
-        
-        return $parameters;
-    }
-    
-    /**
-     * @param ContainerInterface $container
-     * @param array     $queryParams Query Arguments from the request
-     * @param array     $arguments   Arguments from the controller action
-     *
-     * @return array
-     */
-    public static function mapActionArguments(ContainerInterface $container, array $queryParams, array $arguments)
-    {
-        $parameters = array();
-    
-        array_walk($arguments, function (Parameter $param) use (&$parameters, $queryParams, $container) {
-            if (isset($queryParams[$param->getName()])) {
-                if (!$param->isBuiltIn()) {
-                    $class = $param->getType();
-                    $parameters[] = new $class($queryParams[$param->getName()]);
-                } else {
-                    $parameters[] = $queryParams[$param->getName()];
-                }
-            } else {
-                $service = self::getContainerServiceForParam($container, $param);
-                
-                if (null !== $service) {
-                    $parameters[] = $service;
-                } else if ($param->getDefaultValue() !== null) {
-                    $parameters[] = $param->getDefaultValue();
-                }
-            }
-        });
-        
-        return $parameters;
-    }
-    
-    /**
-     * @param ContainerInterface $container
-     * @param Parameter   $parameter
-     *
-     * @return mixed|null
-     */
-    public static function getContainerServiceForParam(ContainerInterface $container, Parameter $parameter)
-    {
-        if (!$parameter->isBuiltIn()) {
-            $type = $parameter->getType();
             
-            if ($container->has((string) $type)) {
-                return $container->get((string) $type);
+            if ($value === null && $parameter->isDefaultValueAvailable()) {
+                $value = $parameter->getDefaultValue();
             }
         }
         
-        return null;
+        return $value;
     }
 }

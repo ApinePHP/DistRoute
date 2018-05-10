@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace Apine\DistRoute;
 
-use ReflectionClass;
 use RuntimeException;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -103,40 +102,14 @@ class Router implements RouterInterface
      * @return ResponseInterface
      * @throws \Exception
      */
-    private function execute() : ResponseInterface
+    private function execute(): ResponseInterface
     {
         try {
             $container = $this->container;
             $route = $this->current;
             $request = $this->request;
             
-            $reflection = new ReflectionClass($route->controller);
-            $constructor = $reflection->getConstructor();
-            
-            $method = $reflection->getMethod($route->action);
-            $requestParams = DependencyResolver::mapParametersForRequest($request, $route);
-            
-            /* Execution of the user code
-             *
-             * Instantiate de controller then
-             * call the action method
-             */
-            if ($constructor !== null) {
-                $constructorParameters = DependencyResolver::mapConstructorArguments($container, $constructor->getParameters());
-                
-                $controller = $reflection->newInstanceArgs($constructorParameters);
-            } else {
-                $controller = $reflection->newInstanceWithoutConstructor();
-            }
-            
-            $parameters = DependencyResolver::mapActionArguments($container, $requestParams, $route->actionParameters);
-            
-            $response = $method->invokeArgs($controller, $parameters);
-    
-            if (!($response instanceof ResponseInterface)) {
-                throw new \RuntimeException(sprintf('%s::%s must return an instance of %s', $route->controller, $route->action, ResponseInterface::class));
-            }
-            return $response;
+            return $route->invoke($request, $container);
         } catch (\Exception $e) {
             throw $e;
         }

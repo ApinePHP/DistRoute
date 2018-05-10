@@ -7,6 +7,7 @@
  */
 declare(strict_types=1);
 
+/** @noinspection PhpUnhandledExceptionInspection */
 
 use Apine\DistRoute\Route;
 use Apine\DistRoute\RouteDependencyInjector;
