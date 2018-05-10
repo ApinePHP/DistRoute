@@ -1,7 +1,9 @@
 DistRoute
 =========
 
-A regular expression based request router
+A lightweight regular expression based request router with support for dependency injection.
+
+
 
 Installation
 ------------

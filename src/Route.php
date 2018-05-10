@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Apine\DistRoute;
 
+use Closure;
+use Exception;
 use ReflectionClass;
 use ReflectionFunction;
 use ReflectionMethod;
@@ -17,8 +19,8 @@ use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use function in_array, array_map, array_walk;
-use function str_ireplace, preg_match_all, preg_replace, is_string;
-use function is_callable;
+use function str_ireplace, preg_match_all, preg_replace, sprintf;
+use function is_callable, is_string;
 
 /**
  * Class Route
@@ -124,6 +126,11 @@ class Route
         );
     }
     
+    /**
+     * @param string $requestString
+     *
+     * @return array
+     */
     private function extractArguments(string $requestString): array
     {
         $parameters = $this->parseParameters($this->pattern);
@@ -152,7 +159,7 @@ class Route
      * @param ContainerInterface|null $container
      *
      * @return ResponseInterface
-     * @throws \Exception
+     * @throws Exception
      */
     public function invoke(ServerRequestInterface $request, ContainerInterface $container = null): ResponseInterface
     {
@@ -205,7 +212,7 @@ class Route
         }
     
         if (!($response instanceof ResponseInterface)) {
-            if ($this->callable instanceof \Closure) {
+            if ($this->callable instanceof Closure) {
                 $name = 'Closure';
             } else {
                 $name = $this->callable;

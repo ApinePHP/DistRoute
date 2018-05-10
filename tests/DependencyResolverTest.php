@@ -7,6 +7,8 @@
  */
 
 /** @noinspection PhpUnhandledExceptionInspection */
+/** @noinspection ReturnTypeCanBeDeclaredInspection */
+/** @noinspection PhpUnusedLocalVariableInspection */
 
 declare(strict_types=1);
 
@@ -15,153 +17,109 @@ use Psr\Http\Message\UriInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Apine\DistRoute\DependencyResolver;
-use Apine\DistRoute\Parameter;
 use Apine\DistRoute\Route;
 use PHPUnit\Framework\TestCase;
 
 class DependencyResolverTest extends TestCase
 {
-    private static function requestFactory ()
+    public function testResolve()
     {
-        return (new Request(
-            'GET',
-            new Uri('https://example.com/156?home=cat'),
-            [],
-            null,
-            '1.1',
-            $_SERVER
-        ));
-    }
-    
-    private static function requestOptionalFactory ()
-    {
-        return (new Request(
-            'GET',
-            new Uri('https://example.com/test/156?home=cat'),
-            [],
-            null,
-            '1.1',
-            $_SERVER
-        ));
-    }
-    
-    private static function routeFactory()
-    {
-        return new Route(
-            'GET',
-            '/{input}',
-            TestDependencyController::class,
-            'inputTest'
-        );
-    }
-    
-    private static function routeOptionalFactory()
-    {
-        return new Route(
-            'GET',
-            '/{first}/{?second}',
-            TestDependencyController::class,
-            'inputTestTwo'
-        );
-    }
-    
-    public function testResolveParameters()
-    {
-        $request = self::requestFactory();
-        $route = self::routeFactory();
-    
-        $parameters = DependencyResolver::resolveParameters($request, $route);
-        $this->assertInternalType('array', $parameters);
-        $this->assertArrayHasKey('input', $parameters);
-    }
-    
-    public function testResolveParametersOptionalParameter()
-    {
-        $request = self::requestOptionalFactory();
-        $route = self::routeOptionalFactory();
-    
-        $parameters = DependencyResolver::resolveParameters($request, $route);
-        $this->assertInternalType('array', $parameters);
-        $this->assertArrayHasKey('second', $parameters);
-    }
-    
-    public function testMapParametersForRequest()
-    {
-        $request = self::requestFactory();
-        $route = self::routeFactory();
+        $uri = $this->getMockBuilder(UriInterface::class)
+            ->setMethods(['getPath'])
+            ->getMockForAbstractClass();
+        $request = $this->getMockBuilder(ServerRequestInterface::class)
+            ->setMethods(['getUri'])
+            ->getMockForAbstractClass();
+        $uri->method('getPath')->willReturn('/test/15/AS');
+        $request->method('getUri')->willReturn($uri);
         
-        $parameters = DependencyResolver::mapParametersForRequest($request, $route);
+        $route = $this->getMockBuilder(Route::class)
+            ->setConstructorArgs([
+                'methods' => ['GET'],
+                'pattern' => '/test/{id:([0-9]+)}/{name:([A-Z]{2})}',
+                'callable' => DependencyResolverTestController::class . '@inputTestTwo'
+            ])
+            ->getMock();
         
-        $this->assertInternalType('array', $parameters);
-    }
-    
-    public function testGetContainerServiceForParam()
-    {
-        $container = self::containerFactory();
-        $parameter = new Parameter(
-            Request::class,
-            'request',
-            null
-        );
+        $resolver = new DependencyResolver();
         
-        $this->assertInstanceOf(
-            Request::class,
-            DependencyResolver::getContainerServiceForParam($container, $parameter)
-        );
+        $method = new ReflectionMethod(DependencyResolverTestController::class, 'inputTestTwo');
+        $parameter = $method->getParameters()[0];
+        $value = $resolver->resolve($parameter, [
+            'id' => 15,
+            'name' => 'AS'
+        ]);
+        $this->assertEquals('AS', $value);
     }
     
-    public function testGetContainerServiceForParamNotAService()
+    public function testResolveContainerService()
     {
-        $container = self::containerFactory();
-        $parameter = new Parameter(
-            DOMDocument::class,
-            'document',
-            null
-        );
+        $container = $this->getMockBuilder(ContainerInterface::class)
+            ->setMethods(['get', 'has'])
+            ->getMockForAbstractClass();
+        $container->expects($this->any())->method('has')->with($this->equalTo(ResponseInterface::class))->will($this->returnValue(true));
+        $container->expects($this->any())->method('get')->with($this->equalTo(ResponseInterface::class))->willReturnCallback(function () {
+            return $this->getMockForAbstractClass(ResponseInterface::class);
+        });
     
-        $this->assertNull(
-            DependencyResolver::getContainerServiceForParam($container, $parameter)
-        );
+        $resolver = new DependencyResolver($container);
+    
+        $method = new ReflectionMethod(DependencyResolverTestController::class, 'inputTestTwo');
+        $parameter = $method->getParameters()[2];
+        $value = $resolver->resolve($parameter, [
+            'id' => 15,
+            'name' => 'AS'
+        ]);
+        $this->assertInstanceOf(ResponseInterface::class, $value);
     }
     
-    public function testMapConstructorArguments()
+    public function testResolveContainerServiceNotFound()
     {
-        $container = self::containerFactory();
-        $route = self::routeFactory();
-    
-        $reflection = new \ReflectionClass($route->controller);
-        $constructor = $reflection->getConstructor();
-    
-        $arguments = DependencyResolver::mapConstructorArguments($container, $constructor->getParameters());
-        $this->assertInternalType('array', $arguments);
-    }
-    
-    public function testMapActionArguments()
-    {
-        $container = self::containerFactory();
-        $route = self::routeFactory();
-        $request = self::requestFactory();
+        $container = $this->getMockBuilder(ContainerInterface::class)
+            ->setMethods(['get', 'has'])
+            ->getMockForAbstractClass();
+        $container->expects($this->any())->method('has')->with($this->equalTo(ServerRequestInterface::class))->will($this->returnValue(false));
         
-        $requestParams = DependencyResolver::mapParametersForRequest($request, $route);
+        $resolver = new DependencyResolver($container);
         
-        $map = DependencyResolver::mapActionArguments($container, $requestParams, $route->actionParameters);
-        $this->assertInternalType('array', $map);
+        $class = new ReflectionClass(DependencyResolverTestController::class);
+        $constructor = $class->getConstructor();
+        
+        $parameter = $constructor->getParameters()[0];
+        $value = $resolver->resolve($parameter, [
+            'id' => 15,
+            'name' => 'AS'
+        ]);
+        $this->assertNull($value);
     }
     
-    public function testMapActionArgumentsOptionalParameter()
+    public function testResolveValueNotFound()
     {
-        $container = self::containerFactory();
-        $route = self::routeOptionalFactory();
-        $request = self::requestOptionalFactory();
+        $resolver = new DependencyResolver();
     
-        $requestParams = DependencyResolver::mapParametersForRequest($request, $route);
-        $map = DependencyResolver::mapActionArguments($container, $requestParams, $route->actionParameters);
-        $this->assertInternalType('array', $map);
+        $method = new ReflectionMethod(DependencyResolverTestController::class, 'inputTestTwo');
+        $parameter = $method->getParameters()[0];
+        $value = $resolver->resolve($parameter, [
+            'id' => 15
+        ]);
+        $this->assertNull($value);
+    }
+    
+    public function testResolveValueNotFoundDefaultValue()
+    {
+        $resolver = new DependencyResolver();
+        
+        $method = new ReflectionMethod(DependencyResolverTestController::class, 'inputTestTwo');
+        $parameter = $method->getParameters()[3];
+        $value = $resolver->resolve($parameter, [
+            'id' => 15
+        ]);
+        $this->assertEquals('Merlin', $value);
     }
 }
 
-class TestDependencyController {
+class DependencyResolverTestController {
     public function __construct(ServerRequestInterface $request) {}
     public function inputTest(int $input){}
-    public function inputTestTwo(string $first, ServerRequestInterface $request, $cat = 'Merlin'){}
+    public function inputTestTwo(string $name, int $id, ResponseInterface $request, $cat = 'Merlin'){}
 }
