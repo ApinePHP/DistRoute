@@ -17,7 +17,6 @@ use Psr\Http\Message\UriInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Apine\DistRoute\DependencyResolver;
-use Apine\DistRoute\Route;
 use PHPUnit\Framework\TestCase;
 
 class DependencyResolverTest extends TestCase
@@ -32,14 +31,6 @@ class DependencyResolverTest extends TestCase
             ->getMockForAbstractClass();
         $uri->method('getPath')->willReturn('/test/15/AS');
         $request->method('getUri')->willReturn($uri);
-        
-        $route = $this->getMockBuilder(Route::class)
-            ->setConstructorArgs([
-                'methods' => ['GET'],
-                'pattern' => '/test/{id:([0-9]+)}/{name:([A-Z]{2})}',
-                'callable' => DependencyResolverTestController::class . '@inputTestTwo'
-            ])
-            ->getMock();
         
         $resolver = new DependencyResolver();
         

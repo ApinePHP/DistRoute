@@ -11,13 +11,14 @@ namespace Apine\DistRoute;
 
 use Exception;
 use RuntimeException;
+use Apine\DistRoute\Route;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use function call_user_func;
 use function sprintf;
 
-class Router implements RouterInterface
+final class Router implements RouterInterface
 {
     /**
      * @var ServerRequestInterface
@@ -97,67 +98,23 @@ class Router implements RouterInterface
      */
     public function find (ServerRequestInterface $request) : Route
     {
+        $match = null;
         foreach ($this->routes as $route) {
             if ($route->match($request)) {
-                $this->current = $route;
-                $this->request = $request;
+                $match = $route;
                 break;
             }
         }
         
-        if (null === $this->current) {
+        if (null === $match) {
             throw new RuntimeException(sprintf('Route for request %s not found', $request->getUri()->getPath()));
         }
         
-        return $this->current;
+        return $match;
     }
     
     /**
-     * Execute a route's callable
-     *
-     * @return ResponseInterface
-     * @throws Exception
-     */
-    private function execute(): ResponseInterface
-    {
-        try {
-            $container = $this->container;
-            $route = $this->current;
-            $request = $this->request;
-            
-            return $route->invoke($request, $container);
-        } catch (Exception $e) {
-            throw $e;
-        }
-    }
-    
-    /**
-     * Run the router
-     *
-     * @param Route $route
-     * @param ServerRequestInterface $request
-     *
-     * @return ResponseInterface
-     * @throws Exception
-     */
-    public function run(Route $route, ServerRequestInterface $request) : ResponseInterface
-    {
-        try {
-            $this->current = $route;
-            $this->request = $request;
-            
-            if (!$this->current->match($request)) {
-                throw new RuntimeException(sprintf('Route does not match request %s', $request->getUri()->getPath()), 404);
-            }
-            
-            return $this->execute();
-        } catch (Exception $e) {
-            throw $e;
-        }
-    }
-    
-    /**
-     * Dispatch a request to a route then return the generated response
+     * Dispatch a request
      *
      * @param ServerRequestInterface $request
      *
@@ -167,8 +124,10 @@ class Router implements RouterInterface
     public function dispatch(ServerRequestInterface $request) : ResponseInterface
     {
         try {
-            $this->find($request);
-            return $this->execute();
+            $container = $this->container;
+            $route = $this->find($request);
+    
+            return $route->invoke($request, $container);
         } catch (Exception $e) {
             throw $e;
         }
@@ -180,10 +139,15 @@ class Router implements RouterInterface
      * @param string[]        $methods
      * @param string          $pattern
      * @param callable|string $callable
+     *
+     * @return Route
      */
-    public function map(array $methods, string $pattern, $callable): void
+    public function map(array $methods, string $pattern, $callable): Route
     {
-        $this->routes[] = new Route($methods, $pattern, $callable);
+        $route = new Route($methods, $pattern, $callable);
+        $this->routes[] = $route;
+        
+        return $route;
     }
     
     /**
@@ -197,7 +161,7 @@ class Router implements RouterInterface
         $currentBase = $this->basePattern;
         $this->basePattern .= $pattern;
         
-        call_user_func($callable);
+        call_user_func($callable, $this);
         
         $this->basePattern = $currentBase;
     }
@@ -208,9 +172,9 @@ class Router implements RouterInterface
      * @param string          $pattern
      * @param callable|string $callable
      */
-    public function get(string $pattern, $callable): void
+    public function get(string $pattern, $callable): Route
     {
-        $this->map(['GET'], $pattern, $callable);
+        return $this->map(['GET'], $pattern, $callable);
     }
     
     /**
@@ -218,10 +182,12 @@ class Router implements RouterInterface
      *
      * @param string          $pattern
      * @param callable|string $callable
+     *
+     * @return Route
      */
-    public function post(string $pattern, $callable): void
+    public function post(string $pattern, $callable): Route
     {
-        $this->map(['POST'], $pattern, $callable);
+        return $this->map(['POST'], $pattern, $callable);
     }
     
     /**
@@ -229,10 +195,12 @@ class Router implements RouterInterface
      *
      * @param string          $pattern
      * @param callable|string $callable
+     *
+     * @return Route
      */
-    public function put(string $pattern, $callable): void
+    public function put(string $pattern, $callable): Route
     {
-        $this->map(['PUT'], $pattern, $callable);
+        return $this->map(['PUT'], $pattern, $callable);
     }
     
     /**
@@ -240,10 +208,12 @@ class Router implements RouterInterface
      *
      * @param string          $pattern
      * @param callable|string $callable
+     *
+     * @return Route
      */
-    public function delete(string $pattern, $callable): void
+    public function delete(string $pattern, $callable): Route
     {
-        $this->map(['DELETE'], $pattern, $callable);
+        return $this->map(['DELETE'], $pattern, $callable);
     }
     
     /**
@@ -251,10 +221,12 @@ class Router implements RouterInterface
      *
      * @param string          $pattern
      * @param callable|string $callable
+     *
+     * @return Route
      */
-    public function options(string $pattern, $callable): void
+    public function options(string $pattern, $callable): Route
     {
-        $this->map(['OPTIONS'], $pattern, $callable);
+        return $this->map(['OPTIONS'], $pattern, $callable);
     }
     
     /**
@@ -262,10 +234,12 @@ class Router implements RouterInterface
      *
      * @param string          $pattern
      * @param callable|string $callable
+     *
+     * @return Route
      */
-    public function head(string $pattern, $callable): void
+    public function head(string $pattern, $callable): Route
     {
-        $this->map(['HEAD'], $pattern, $callable);
+        return $this->map(['HEAD'], $pattern, $callable);
     }
     
     /**
@@ -273,10 +247,12 @@ class Router implements RouterInterface
      *
      * @param string          $pattern
      * @param callable|string $callable
+     *
+     * @return Route
      */
-    public function trace(string $pattern, $callable): void
+    public function trace(string $pattern, $callable): Route
     {
-        $this->map(['TRACE'], $pattern, $callable);
+        return $this->map(['TRACE'], $pattern, $callable);
     }
     
     /**
@@ -284,10 +260,12 @@ class Router implements RouterInterface
      *
      * @param string          $pattern
      * @param callable|string $callable
+     *
+     * @return Route
      */
-    public function patch(string $pattern, $callable): void
+    public function patch(string $pattern, $callable): Route
     {
-        $this->map(['PATCH'], $pattern, $callable);
+        return $this->map(['PATCH'], $pattern, $callable);
     }
     
     /**
@@ -295,9 +273,11 @@ class Router implements RouterInterface
      *
      * @param string          $pattern
      * @param callable|string $callable
+     *
+     * @return Route
      */
-    public function any(string $pattern, $callable): void
+    public function any(string $pattern, $callable): Route
     {
-        $this->map(self::$verbs, $pattern, $callable);
+        return $this->map(self::$verbs, $pattern, $callable);
     }
 }

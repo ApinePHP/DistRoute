@@ -10,7 +10,7 @@ declare(strict_types=1);
 namespace Apine\DistRoute;
 
 
-class ParameterDefinition
+final class ParameterDefinition
 {
     public $name;
     

@@ -20,7 +20,7 @@ use Psr\Http\Message\ResponseInterface;
 interface RouterInterface
 {
     /**
-     * Route the request to the best matching controller and action
+     * Find the best matching route for the request
      *
      * @param Request $request
      *
@@ -29,17 +29,7 @@ interface RouterInterface
     public function find(Request $request) : Route;
     
     /**
-     * Execute an action
-     *
-     * @param Route         $route
-     * @param Request       $request
-     *
-     * @return ResponseInterface
-     */
-    public function run(Route $route, Request $request) : ResponseInterface;
-    
-    /**
-     * Execute an action
+     * Dispatch a request
      *
      * @param Request $request
      *

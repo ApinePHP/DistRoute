@@ -27,7 +27,7 @@ use function is_callable, is_string;
  *
  * @package Apine\DistRoute
  */
-class Route
+final class Route
 {
     /**
      * @var string
