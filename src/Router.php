@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Apine\DistRoute;
 
 use Exception;
+use Psr\Http\Server\RequestHandlerInterface;
 use RuntimeException;
 use Apine\DistRoute\Route;
 use Psr\Container\ContainerInterface;
@@ -18,22 +19,12 @@ use Psr\Http\Message\ServerRequestInterface;
 use function call_user_func;
 use function sprintf;
 
-final class Router implements RouterInterface
+final class Router implements RequestHandlerInterface
 {
-    /**
-     * @var ServerRequestInterface
-     */
-    private $request;
-    
     /**
      * @var Route[]
      */
     private $routes = [];
-    
-    /**
-     * @var Route
-     */
-    private $current;
     
     /**
      * @var ContainerInterface
@@ -89,43 +80,31 @@ final class Router implements RouterInterface
     }
     
     /**
-     * Find the best matching route for the request
-     *
-     * @param ServerRequestInterface $request
-     * @return Route
-     *
-     * @throws \Exception If route not found
-     */
-    public function find (ServerRequestInterface $request) : Route
-    {
-        $match = null;
-        foreach ($this->routes as $route) {
-            if ($route->match($request)) {
-                $match = $route;
-                break;
-            }
-        }
-        
-        if (null === $match) {
-            throw new RuntimeException(sprintf('Route for request %s not found', $request->getUri()->getPath()));
-        }
-        
-        return $match;
-    }
-    
-    /**
      * Dispatch a request
      *
      * @param ServerRequestInterface $request
      *
      * @return ResponseInterface
+     *
      * @throws Exception
+     * @throws \RuntimeException If no matching route found
      */
-    public function dispatch(ServerRequestInterface $request) : ResponseInterface
+    public function handle(ServerRequestInterface $request) : ResponseInterface
     {
         try {
             $container = $this->container;
-            $route = $this->find($request);
+            $route = null;
+    
+            foreach ($this->routes as $item) {
+                if ($item->match($request)) {
+                    $route = $item;
+                    break;
+                }
+            }
+    
+            if (null === $route) {
+                throw new RuntimeException(sprintf('Route for request %s not found', $request->getUri()->getPath()));
+            }
     
             return $route->invoke($request, $container);
         } catch (Exception $e) {
@@ -171,6 +150,8 @@ final class Router implements RouterInterface
      *
      * @param string          $pattern
      * @param callable|string $callable
+     *
+     * @return Route
      */
     public function get(string $pattern, $callable): Route
     {

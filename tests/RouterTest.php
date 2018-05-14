@@ -10,6 +10,7 @@
 /** @noinspection PhpParamsInspection */
 /** @noinspection PhpUndefinedMethodInspection */
 /** @noinspection PhpUnusedLocalVariableInspection */
+/** @noinspection ReturnTypeCanBeDeclaredInspection */
 
 declare(strict_types=1);
 
@@ -144,54 +145,11 @@ class RouterTest extends TestCase
         $this->assertAttributeNotEmpty('routes', $router);
     }
     
-    public function testFind()
-    {
-        $request = $this->getMockBuilder(ServerRequestInterface::class)
-            ->setMethods(['getMethod', 'getUri'])
-            ->getMockForAbstractClass();
-    
-        $uri = $this->getMockBuilder(UriInterface::class)
-            ->setMethods(['getPath'])
-            ->getMockForAbstractClass();
-    
-        $uri->method('getPath')->willReturn('/test/1567');
-        $request->method('getUri')->willReturn($uri);
-        $request->method('getMethod')->willReturn('GET');
-        
-        $router = new Router();
-        $router->get('/test/{number}', function(){});
-        
-        $this->assertInstanceOf(Route::class, $router->find($request));
-    }
-    
     /**
      * @expectedException \RuntimeException
      * @expectedExceptionMessageRegExp /Route for request (.+?) not found/
      */
-    public function testFindMatchRouteNotFound()
-    {
-        $request = $this->getMockBuilder(ServerRequestInterface::class)
-            ->setMethods(['getMethod', 'getUri'])
-            ->getMockForAbstractClass();
-    
-        $uri = $this->getMockBuilder(UriInterface::class)
-            ->setMethods(['getPath'])
-            ->getMockForAbstractClass();
-    
-        $uri->method('getPath')->willReturn('/test/1567/other');
-        $request->method('getUri')->willReturn($uri);
-        $request->method('getMethod')->willReturn('GET');
-    
-        $router = new Router();
-        $router->get('/test/{number}', function(){});
-        $router->find($request);
-    }
-    
-    /**
-     * @expectedException \RuntimeException
-     * @expectedExceptionMessageRegExp /Route for request (.+?) not found/
-     */
-    public function testDispatchNoMatchFound()
+    public function testHandleNoMatchFound()
     {
         $request = $this->getMockBuilder(ServerRequestInterface::class)
             ->setMethods(['getMethod', 'getUri'])
@@ -208,13 +166,13 @@ class RouterTest extends TestCase
         $router = new Router();
         $router->get('/test/{number}', function(){});
         
-        $response = $router->dispatch($request);
+        $response = $router->handle($request);
     }
     
     /**
      * @expectedException \RuntimeException
      */
-    public function testDispatchErrorExcecution()
+    public function testHandleErrorExecution()
     {
         $request = $this->getMockBuilder(ServerRequestInterface::class)
             ->setMethods(['getMethod', 'getUri'])
@@ -231,6 +189,6 @@ class RouterTest extends TestCase
         $router = new Router();
         $router->get('/test/{number}', function(){});
     
-        $response = $router->dispatch($request);
+        $response = $router->handle($request);
     }
 }
