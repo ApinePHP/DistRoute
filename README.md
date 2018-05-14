@@ -38,7 +38,7 @@ require '/path/to/vendor/autoload.php';
 use Apine\DistRoute\Router;
 
 $router = new Router();
-$router->map(['GET'], '/users', UserController::class, 'all');
+$router->map(['GET'], '/users', UserController::class . '@all');
 
 $response = $router->dispatch($serverRequest);
 ```
