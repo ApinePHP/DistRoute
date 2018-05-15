@@ -9,29 +9,39 @@ declare(strict_types=1);
 
 namespace Apine\DistRoute;
 
+use Closure;
 use Exception;
-use Psr\Http\Server\RequestHandlerInterface;
 use RuntimeException;
-use Apine\DistRoute\Route;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use function call_user_func;
 use function sprintf;
 
-final class Router implements RequestHandlerInterface
+/**
+ * A lightweight fully PSR-7 compatible regex based request router
+ * with dependency injection using a DI container
+ *
+ * @package Apine\DistRoute
+ */
+final class Router implements RouterInterface
 {
     /**
+     * List or available routes
+     *
      * @var Route[]
      */
     private $routes = [];
     
     /**
+     * DI Container
+     *
      * @var ContainerInterface
      */
     private $container;
     
     /**
+     * Base route pattern
+     *
      * @var string
      */
     private $basePattern;
@@ -43,8 +53,7 @@ final class Router implements RequestHandlerInterface
         'DELETE',
         'HEAD',
         'OPTIONS',
-        'TRACE',
-        'PATCH'
+        'TRACE'
     ];
     
     /**
@@ -69,7 +78,7 @@ final class Router implements RequestHandlerInterface
     
     /**
      * Set the base pattern added to the pattern of a new route
-     * Changing this value will only affect the route to be added
+     * Changing this value will only affect the routes to be added
      * after changing it.
      *
      * @param string $pattern
@@ -113,16 +122,15 @@ final class Router implements RequestHandlerInterface
     }
     
     /**
-     * Add route
+     * Map a new route to one or multiple request methods
      *
-     * @param string[]        $methods
-     * @param string          $pattern
-     * @param callable|string $callable
+     * @inheritdoc RouteMappingInterface::map()
      *
      * @return Route
      */
     public function map(array $methods, string $pattern, $callable): Route
     {
+        $pattern = $this->basePattern . $pattern;
         $route = new Route($methods, $pattern, $callable);
         $this->routes[] = $route;
         
@@ -132,15 +140,15 @@ final class Router implements RequestHandlerInterface
     /**
      * Add multiple routes under a prefix
      *
-     * @param string          $pattern
-     * @param callable|string $callable
+     * @inheritdoc RouteMappingInterface::group()
      */
-    public function group(string $pattern, callable $callable): void
+    public function group(string $pattern, Closure $closure): void
     {
         $currentBase = $this->basePattern;
         $this->basePattern .= $pattern;
         
-        call_user_func($callable, $this);
+        //call_user_func($callable, $this);
+        $closure->call($this);
         
         $this->basePattern = $currentBase;
     }
@@ -148,9 +156,8 @@ final class Router implements RequestHandlerInterface
     /**
      * Add a route responding to the GET method
      *
-     * @param string          $pattern
-     * @param callable|string $callable
-     *
+     * @inheritdoc RouteMappingInterface::get()
+     * @see RouterInterface::map()
      * @return Route
      */
     public function get(string $pattern, $callable): Route
@@ -161,9 +168,8 @@ final class Router implements RequestHandlerInterface
     /**
      * Add a route responding to the POST method
      *
-     * @param string          $pattern
-     * @param callable|string $callable
-     *
+     * @inheritdoc RouteMappingInterface::post()
+     * @see RouterInterface::map()
      * @return Route
      */
     public function post(string $pattern, $callable): Route
@@ -174,9 +180,8 @@ final class Router implements RequestHandlerInterface
     /**
      * Add a route responding to the PUT method
      *
-     * @param string          $pattern
-     * @param callable|string $callable
-     *
+     * @inheritdoc RouteMappingInterface::put()
+     * @see RouterInterface::map()
      * @return Route
      */
     public function put(string $pattern, $callable): Route
@@ -187,9 +192,8 @@ final class Router implements RequestHandlerInterface
     /**
      * Add a route responding to the DELETE method
      *
-     * @param string          $pattern
-     * @param callable|string $callable
-     *
+     * @inheritdoc RouteMappingInterface::delete()
+     * @see RouterInterface::map()
      * @return Route
      */
     public function delete(string $pattern, $callable): Route
@@ -200,9 +204,8 @@ final class Router implements RequestHandlerInterface
     /**
      * Add a route responding to the OPTION method
      *
-     * @param string          $pattern
-     * @param callable|string $callable
-     *
+     * @inheritdoc RouteMappingInterface::options()
+     * @see RouterInterface::map()
      * @return Route
      */
     public function options(string $pattern, $callable): Route
@@ -213,9 +216,8 @@ final class Router implements RequestHandlerInterface
     /**
      * Add a route responding to the HEAD method
      *
-     * @param string          $pattern
-     * @param callable|string $callable
-     *
+     * @inheritdoc RouteMappingInterface::head()
+     * @see RouterInterface::map()
      * @return Route
      */
     public function head(string $pattern, $callable): Route
@@ -224,11 +226,8 @@ final class Router implements RequestHandlerInterface
     }
     
     /**
-     * Add a route responding to the TRACE method
-     *
-     * @param string          $pattern
-     * @param callable|string $callable
-     *
+     * @inheritdoc RouteMappingInterface::trace()
+     * @see RouterInterface::map()
      * @return Route
      */
     public function trace(string $pattern, $callable): Route
@@ -237,28 +236,19 @@ final class Router implements RequestHandlerInterface
     }
     
     /**
-     * Add a route responding to the PATCH method
-     *
-     * @param string          $pattern
-     * @param callable|string $callable
-     *
-     * @return Route
-     */
-    public function patch(string $pattern, $callable): Route
-    {
-        return $this->map(['PATCH'], $pattern, $callable);
-    }
-    
-    /**
      * Add a route responding to any request method
      *
-     * @param string          $pattern
-     * @param callable|string $callable
+     * @inheritdoc RouteMappingInterface::any()
+     * @see RouterInterface::map()
      *
      * @return Route
      */
     public function any(string $pattern, $callable): Route
     {
-        return $this->map(self::$verbs, $pattern, $callable);
+        $pattern = $this->basePattern . $pattern;
+        $route = new Route([], $pattern, $callable);
+        $this->routes[] = $route;
+    
+        return $route;
     }
 }

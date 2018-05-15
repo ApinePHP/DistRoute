@@ -11,6 +11,8 @@
 /** @noinspection PhpUndefinedMethodInspection */
 /** @noinspection PhpUnusedLocalVariableInspection */
 /** @noinspection ReturnTypeCanBeDeclaredInspection */
+/** @noinspection UnnecessaryAssertionInspection */
+/** @noinspection PhpMethodParametersCountMismatchInspection */
 
 declare(strict_types=1);
 
@@ -116,10 +118,10 @@ class RouterTest extends TestCase
         $this->assertAttributeEquals(['HEAD'], 'methods', $route);
     }
     
-    public function testPatch()
+    public function testCustom()
     {
         $router = new Router();
-        $route = $router->patch('/test/{number}', function(){});
+        $route = $router->map(['PATCH'], '/test/{number}', function(){});
         $this->assertInstanceOf(Route::class, $route);
         $this->assertAttributeEquals(['PATCH'], 'methods', $route);
     }
@@ -135,10 +137,11 @@ class RouterTest extends TestCase
     {
         $router = new Router();
         $this->assertAttributeEmpty('basePattern', $router);
+        $parent = $this;
         
-        $router->group('/test', function ($router) {
-            $this->assertAttributeNotEmpty('basePattern', $router);
-            $router->any('/{number}', function(){});
+        $router->group('/test', function () use ($parent) {
+            $parent->assertAttributeNotEmpty('basePattern', $this);
+            $this->any('/{number}', function(){});
         });
     
         $this->assertAttributeEmpty('basePattern', $router);

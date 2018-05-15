@@ -30,21 +30,29 @@ use function is_callable, is_string;
 final class Route
 {
     /**
+     * Route's pattern
+     *
      * @var string
      */
     public $pattern;
     
     /**
+     * Accepted request methods
+     *
      * @var string[]
      */
     public $methods;
     
     /**
+     * Handler to be executed
+     *
      * @var callable|string
      */
     private $callable;
     
     /**
+     * Built regex for matching
+     *
      * @var string
      */
     public $regex;
@@ -52,9 +60,9 @@ final class Route
     /**
      * Route constructor.
      *
-     * @param string[] $methods
-     * @param string $pattern
-     * @param callable|string $callable
+     * @param string[]          $methods A list of accepted request methods
+     * @param string            $pattern A route pattern similar to /user/{id:(\d+)}
+     * @param callable|string   $callable The handler to be executed
      */
     public function __construct(array $methods, string $pattern, $callable)
     {
@@ -67,11 +75,11 @@ final class Route
     /**
      * Parse the route pattern to extract the list of named parameters
      *
-     * @param string $pattern
+     * @param string $pattern A route pattern similar to /user/{id:(\d+)}
      *
      * @return array
      */
-    public function parseParameters(string $pattern): array
+    private function parseParameters(string $pattern): array
     {
         preg_match_all('/\{(\??)(\w+?)(:(\(.+?\)))?\}/', $pattern, $matches, PREG_SET_ORDER);
         
@@ -91,6 +99,8 @@ final class Route
     }
     
     /**
+     * Build the matching regex
+     *
      * @return string
      */
     private function buildRegex(): string
@@ -111,6 +121,8 @@ final class Route
     }
     
     /**
+     * Verify if the request matches the route
+     *
      * @param ServerRequestInterface $request
      *
      * @return boolean TRUE if the the request string and the method match the route
@@ -120,6 +132,12 @@ final class Route
         $requestString = $request->getUri()->getPath();
         $requestMethod = $request->getMethod();
         
+        $methods = $this->methods;
+        
+        if (count($methods) === 0) {
+           $methods[] = $requestMethod;
+        }
+        
         return (
             in_array($requestMethod, $this->methods, true) &&
             (preg_match($this->regex, $requestString) === 1)
@@ -127,6 +145,8 @@ final class Route
     }
     
     /**
+     * Extract the parameters from the request string
+     *
      * @param string $requestString
      *
      * @return array
@@ -155,6 +175,8 @@ final class Route
     }
     
     /**
+     * Execute the handler
+     *
      * @param ServerRequestInterface  $request
      * @param ContainerInterface|null $container
      *

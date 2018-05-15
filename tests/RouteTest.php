@@ -9,6 +9,11 @@
 /** @noinspection PhpParamsInspection */
 /** @noinspection PhpUnhandledExceptionInspection */
 /** @noinspection PhpUnusedLocalVariableInspection */
+/** @noinspection PhpDocMissingThrowsInspection */
+/** @noinspection ReturnTypeCanBeDeclaredInspection */
+/** @noinspection PhpUnusedParameterInspection */
+/** @noinspection UnnecessaryAssertionInspection */
+/** @noinspection UnNecessaryDoubleQuotesInspection */
 
 declare(strict_types=1);
 
@@ -30,7 +35,7 @@ class RouteTest extends TestCase
         $action = "inputTest";
     
         $route = new Route($methods, $pattern, $controller . '@' . $action);
-        $parameters = $route->parseParameters($route->pattern);
+        $parameters = $this->invokeMethod($route, 'parseParameters', [$route->pattern]);
         
         $this->assertEquals(
             [
@@ -68,7 +73,7 @@ class RouteTest extends TestCase
         $callable = $controller . '@' . $action;
         
         $route = new Route($methods, $pattern, $callable);
-        $parameters = $route->parseParameters($route->pattern);
+        $parameters = $this->invokeMethod($route, 'parseParameters', [$route->pattern]);
         
         $parameter = $parameters[0];
         $this->assertTrue($parameter->optional);
@@ -83,7 +88,7 @@ class RouteTest extends TestCase
         );
         $routeTwo = new Route(
             ['GET'],
-            '/{input:([0-9]+)}',
+            '/{input:(\d+)}',
             TestController::class . '@inputTest'
         );
         $routeThree = new Route(
@@ -93,7 +98,7 @@ class RouteTest extends TestCase
         );
         $routeFour = new Route(
             ['POST'],
-            '/test/{first:(\w+)}/{second:([0-9]+)}',
+            '/test/{first:(\w+)}/{second:(\d+)}',
             TestController::class . '@inputTestTwo'
         );
         
@@ -308,6 +313,24 @@ class RouteTest extends TestCase
         );
     
         $response = $route->invoke($request);
+    }
+    
+    /**
+     * Call protected/private method of a class.
+     *
+     * @param object &$object    Instantiated object that we will run method on.
+     * @param string $methodName Method name to call
+     * @param array  $parameters Array of parameters to pass into method.
+     *
+     * @return mixed Method return.
+     */
+    public function invokeMethod(&$object, $methodName, array $parameters = array())
+    {
+        $reflection = new \ReflectionClass(get_class($object));
+        $method = $reflection->getMethod($methodName);
+        $method->setAccessible(true);
+        
+        return $method->invokeArgs($object, $parameters);
     }
 }
 
