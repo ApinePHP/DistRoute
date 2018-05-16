@@ -47,9 +47,16 @@ class DependencyResolver
         } else {
             $value = null;
     
-            if ($this->container instanceof ContainerInterface && !$type->isBuiltin()) {
-                if ($this->container->has((string)$type)) {
-                    $value = $this->container->get((string)$type);
+            if (
+                $this->container instanceof ContainerInterface &&
+                !$type->isBuiltin() &&
+                $this->container->has($name)
+            ) {
+                $value = $this->container->get($name);
+                $class = (string)$type;
+                
+                if (!($value instanceof $class)) {
+                    $value = null;
                 }
             }
             

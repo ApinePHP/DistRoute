@@ -18,7 +18,7 @@ use RuntimeException;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use function in_array, array_map, array_walk;
+use function in_array, array_map, array_walk, count;
 use function str_ireplace, preg_match_all, preg_replace, sprintf;
 use function is_callable, is_string;
 

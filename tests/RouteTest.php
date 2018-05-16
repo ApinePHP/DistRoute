@@ -234,8 +234,8 @@ class RouteTest extends TestCase
         $container = $this->getMockBuilder(ContainerInterface::class)
             ->setMethods(['get', 'has'])
             ->getMockForAbstractClass();
-        $container->expects($this->any())->method('has')->with($this->equalTo(ResponseInterface::class))->will($this->returnValue(true));
-        $container->expects($this->any())->method('get')->with($this->equalTo(ResponseInterface::class))->willReturnCallback(function () {
+        $container->expects($this->any())->method('has')->with($this->equalTo('response'))->will($this->returnValue(true));
+        $container->expects($this->any())->method('get')->with($this->equalTo('response'))->willReturnCallback(function () {
             return $this->getMockForAbstractClass(ResponseInterface::class);
         });
     
@@ -270,8 +270,8 @@ class RouteTest extends TestCase
         $container = $this->getMockBuilder(ContainerInterface::class)
             ->setMethods(['get', 'has'])
             ->getMockForAbstractClass();
-        $container->expects($this->any())->method('has')->with($this->equalTo(ResponseInterface::class))->will($this->returnValue(true));
-        $container->expects($this->any())->method('get')->with($this->equalTo(ResponseInterface::class))->willReturnCallback(function () {
+        $container->expects($this->any())->method('has')->with($this->equalTo('response'))->will($this->returnValue(true));
+        $container->expects($this->any())->method('get')->with($this->equalTo('response'))->willReturnCallback(function () {
             return $this->getMockForAbstractClass(ResponseInterface::class);
         });
         

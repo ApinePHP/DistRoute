@@ -48,8 +48,8 @@ class DependencyResolverTest extends TestCase
         $container = $this->getMockBuilder(ContainerInterface::class)
             ->setMethods(['get', 'has'])
             ->getMockForAbstractClass();
-        $container->expects($this->any())->method('has')->with($this->equalTo(ResponseInterface::class))->will($this->returnValue(true));
-        $container->expects($this->any())->method('get')->with($this->equalTo(ResponseInterface::class))->willReturnCallback(function () {
+        $container->expects($this->any())->method('has')->with($this->equalTo('response'))->will($this->returnValue(true));
+        $container->expects($this->any())->method('get')->with($this->equalTo('response'))->willReturnCallback(function () {
             return $this->getMockForAbstractClass(ResponseInterface::class);
         });
     
@@ -69,7 +69,7 @@ class DependencyResolverTest extends TestCase
         $container = $this->getMockBuilder(ContainerInterface::class)
             ->setMethods(['get', 'has'])
             ->getMockForAbstractClass();
-        $container->expects($this->any())->method('has')->with($this->equalTo(ServerRequestInterface::class))->will($this->returnValue(false));
+        $container->expects($this->any())->method('has')->with($this->equalTo('request'))->will($this->returnValue(false));
         
         $resolver = new DependencyResolver($container);
         
@@ -107,10 +107,29 @@ class DependencyResolverTest extends TestCase
         ]);
         $this->assertEquals('Merlin', $value);
     }
+    
+    public function testResolveWithConcreteContainer()
+    {
+        $pimple = new Pimple\Container();
+        $pimple['response'] = function () {
+            return $this->getMockForAbstractClass(ResponseInterface::class);
+        };
+        $container = new \Pimple\Psr11\Container($pimple);
+    
+        $resolver = new DependencyResolver($container);
+    
+        $method = new ReflectionMethod(DependencyResolverTestController::class, 'inputTestTwo');
+        $parameter = $method->getParameters()[2];
+        $value = $resolver->resolve($parameter, [
+            'id' => 15,
+            'name' => 'AS'
+        ]);
+        $this->assertInstanceOf(ResponseInterface::class, $value);
+    }
 }
 
 class DependencyResolverTestController {
     public function __construct(ServerRequestInterface $request) {}
     public function inputTest(int $input){}
-    public function inputTestTwo(string $name, int $id, ResponseInterface $request, $cat = 'Merlin'){}
+    public function inputTestTwo(string $name, int $id, ResponseInterface $response, $cat = 'Merlin'){}
 }
