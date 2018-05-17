@@ -149,7 +149,7 @@ class RouterTest extends TestCase
     }
     
     /**
-     * @expectedException \RuntimeException
+     * @expectedException \Apine\DistRoute\RouteNotFoundException
      * @expectedExceptionMessageRegExp /Route for request (.+?) not found/
      */
     public function testHandleNoMatchFound()

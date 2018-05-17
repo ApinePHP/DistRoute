@@ -96,25 +96,26 @@ final class Router implements RouterInterface
      * @return ResponseInterface
      *
      * @throws Exception
-     * @throws \RuntimeException If no matching route found
+     * @throws RouteNotFoundException If no matching route found
      */
     public function handle(ServerRequestInterface $request) : ResponseInterface
     {
+    
+        $container = $this->container;
+        $route = null;
+    
+        foreach ($this->routes as $item) {
+            if ($item->match($request)) {
+                $route = $item;
+                break;
+            }
+        }
+    
+        if (null === $route) {
+            throw new RouteNotFoundException(sprintf('Route for request %s not found', $request->getUri()->getPath()));
+        }
+        
         try {
-            $container = $this->container;
-            $route = null;
-    
-            foreach ($this->routes as $item) {
-                if ($item->match($request)) {
-                    $route = $item;
-                    break;
-                }
-            }
-    
-            if (null === $route) {
-                throw new RuntimeException(sprintf('Route for request %s not found', $request->getUri()->getPath()));
-            }
-    
             return $route->invoke($request, $container);
         } catch (Exception $e) {
             throw $e;
@@ -147,7 +148,6 @@ final class Router implements RouterInterface
         $currentBase = $this->basePattern;
         $this->basePattern .= $pattern;
         
-        //call_user_func($callable, $this);
         $closure->call($this);
         
         $this->basePattern = $currentBase;
