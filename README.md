@@ -1,16 +1,16 @@
 DistRoute
 =========
 
-A lightweight regular expression based request router with support for dependency injection.
+A lightweight regular expression based request router with support for dependency injection targeted at projects consuming the recommendations of the [PHP-FIG](https://www.php-fig.org/psr/).
 
 ### Main Features
 
  - Named parameters in patterns
  - Optional parameters
  - Subrouting
- - Support for `GET`, `POST`, `DELETE`, `PUT`, `OPTIONS`, `HEAD`, `PATCH`, `TRACE` and custom request methods
+ - Support for `GET`, `POST`, `DELETE`, `PUT`, `OPTIONS`, `HEAD`, `TRACE`, and custom request methods
  - Dependency injection
- - Full compatibility with PSR-7 and PSR-11
+ - Full compatibility with [PSR-7](https://www.php-fig.org/psr/psr-7/) and [PSR-11](https://www.php-fig.org/psr/psr-11/)
 
 Installation
 ------------
