@@ -34,6 +34,8 @@ Then install the package with composer
 composer require apine/dist-route
 ```
 
+The package requires PHP 7.2 or newer.
+
 Usage Example
 -------------
 
