@@ -1,5 +1,5 @@
 {
-    "name": "apine/dist-route",
+    "name": "apinephp/dist-route",
     "description": "A regular expression based request router",
     "type": "library",
     "require": {

@@ -31,7 +31,7 @@ Add this repository to your composer config:
 Then install the package with composer
 
 ```sh
-composer require apine/dist-route
+composer require apinephp/dist-route
 ```
 
 The package requires PHP 7.2 or newer.
