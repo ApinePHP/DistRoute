@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 use Apine\DistRoute\Route;
 use Apine\DistRoute\Router;
+use Apine\DistRoute\RouterInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -139,9 +140,11 @@ class RouterTest extends TestCase
         $this->assertAttributeEmpty('basePattern', $router);
         $parent = $this;
         
-        $router->group('/test', function () use ($parent) {
-            $parent->assertAttributeNotEmpty('basePattern', $this);
-            $this->any('/{number}', function(){});
+        $router->group('/test', function ($mapper) use ($parent) {
+            $parent->assertInstanceOf(RouterInterface::class, $mapper);
+            $parent->assertAttributeNotEmpty('basePattern', $mapper);
+            
+            $mapper->any('/{number}', function(){});
         });
     
         $this->assertAttributeEmpty('basePattern', $router);

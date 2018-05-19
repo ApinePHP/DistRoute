@@ -11,7 +11,7 @@ namespace Apine\DistRoute;
 
 use Closure;
 use Exception;
-use RuntimeException;
+
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -148,7 +148,7 @@ final class Router implements RouterInterface
         $currentBase = $this->basePattern;
         $this->basePattern .= $pattern;
         
-        $closure->call($this);
+        $closure($this);
         
         $this->basePattern = $currentBase;
     }

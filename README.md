@@ -80,15 +80,15 @@ The router has shorthand methods for the following request methods : `GET`, `POS
 
 ### Prefix Routes
 
-The `group()` method allows to define multiple routes under a common prefix pattern. The `$pattern` parameter is a pattern as define above that will be prefixed to the child routes. The `$closure` parameter is a function called within the context of the router. So `$this` is a reference to the router in the function.
+The `group()` method allows to define multiple routes under a common prefix pattern. The `$pattern` parameter is a pattern as define above that will be prefixed to the child routes. The `$closure` parameter is a function called within the context of the router. It must receive as its only parameter an instance of `RouterInterface` which represents the current router.
 
 The following will have the same effect as the example above:
 
  ```php
-$router->group('/user', function () {
- $this->map(['GET'], '/{id}', 'handler');
- $this->map(['GET'], '/{id:(\d+)}', 'handler');
- $this->map(['GET'], '/{?id}', 'handler');
+$router->group('/user', function (RouterInterface $mapper) {
+ $mapper->map(['GET'], '/{id}', 'handler');
+ $mapper->map(['GET'], '/{id:(\d+)}', 'handler');
+ $mapper->map(['GET'], '/{?id}', 'handler');
 });
  ```
 

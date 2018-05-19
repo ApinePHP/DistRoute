@@ -63,7 +63,7 @@ interface RouterInterface extends RequestHandlerInterface
      *
      * Adding routes by pre-pending the prefix pattern to their pattern.
      *
-     * The closure SHOULD be called within a context that has access to a RouteMappingInterface.
+     * The closure MUST accept a RouterInterface as its only parameter.
      *
      * @param string   $pattern
      * @param Closure $closure
