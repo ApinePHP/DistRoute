@@ -126,6 +126,24 @@ class DependencyResolverTest extends TestCase
         ]);
         $this->assertInstanceOf(ResponseInterface::class, $value);
     }
+    
+    public function testResolveWithConcreteContainerTypeNotDefinedNoDefaultValue()
+    {
+        $pimple = new Pimple\Container();
+        $pimple['response'] = function () {
+            return $this->getMockForAbstractClass(ResponseInterface::class);
+        };
+        $container = new \Pimple\Psr11\Container($pimple);
+    
+        $resolver = new DependencyResolver($container);
+        
+        $method = new ReflectionMethod(DependencyResolverTestController::class, 'inputTestTwo');
+        $parameter = $method->getParameters()[3];
+        $value = $resolver->resolve($parameter, [
+            'id' => 15
+        ]);
+        $this->assertEquals('Merlin', $value);
+    }
 }
 
 class DependencyResolverTestController {
