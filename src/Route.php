@@ -23,7 +23,7 @@ use function str_ireplace, preg_match_all, preg_replace, sprintf;
 use function is_callable, is_string;
 
 /**
- * Class Route
+ * Route
  *
  * @package Apine\DistRoute
  */
@@ -58,8 +58,6 @@ final class Route
     public $regex;
     
     /**
-     * Route constructor
-     *
      * The array of accepted methods MUST be any standard or custom capitalized
      * method names as defined in RFC-7231. Leaving the list empty means that
      * the route accepts any request method
@@ -254,7 +252,7 @@ final class Route
             $methodArguments[$parameter->getName()] = $resolver->resolve($parameter, $queryArguments);
         }
     
-        if ($hasController && isset($controller) && $controller !== null) {
+        if ($hasController && $controller !== null) {
             $response = $reflectionMethod->invokeArgs($controller, $methodArguments);
         } else {
             $response = $reflectionMethod->invokeArgs($methodArguments);

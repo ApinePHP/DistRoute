@@ -13,20 +13,29 @@ use Psr\Container\ContainerInterface;
 use ReflectionParameter;
 
 /**
- * Class DependencyInjector
+ * This class resolve parameters into their corresponding value
  *
  * @package Apine\DistRoute
  */
 class DependencyResolver
 {
+    /**
+     * @var ContainerInterface
+     */
     private $container;
     
+    /**
+     * @param ContainerInterface|null $container
+     */
     public function __construct(ContainerInterface $container = null)
     {
         $this->container = $container;
     }
     
     /**
+     * Compare a method parameter with a list of request arguments and
+     * a container to resolve it into its value/dependency
+     *
      * @param ReflectionParameter $parameter
      * @param array               $arguments
      *

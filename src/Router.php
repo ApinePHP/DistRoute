@@ -57,8 +57,6 @@ final class Router implements RouterInterface
     ];
     
     /**
-     * Router constructor.
-     *
      * @param ContainerInterface $container
      */
     public function __construct(ContainerInterface $container = null)
