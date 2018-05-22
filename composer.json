@@ -1,6 +1,10 @@
 {
     "name": "apinephp/dist-route",
-    "description": "A regular expression based request router",
+    "description": "A lightweight regular expression based request router with support for dependency injection",
+	"keywords": [
+		"router",
+		"routing"
+	],
     "type": "library",
     "require": {
         "php": ">=7.2",
@@ -23,6 +27,5 @@
 		"psr-4": {
 			"Apine\\DistRoute\\": "src/"
 		}
-	},
-    "minimum-stability": "stable"
+	}
 }
