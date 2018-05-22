@@ -15,20 +15,7 @@ A lightweight regular expression based request router with support for dependenc
 Installation
 ------------
 
-Add this repository to your composer config:
-
-```json
-{
-  "repositories": [
-    {
-      "type": "vcs",
-      "url": "https://github.com/ApinePHP/DistRoute"
-    }
-  ]
-}
-```
-
-Then install the package with composer
+Installation is made with composer
 
 ```sh
 composer require apinephp/dist-route
