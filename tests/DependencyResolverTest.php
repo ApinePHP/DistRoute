@@ -144,10 +144,35 @@ class DependencyResolverTest extends TestCase
         ]);
         $this->assertEquals('Merlin', $value);
     }
+    
+    public function testResolveWithObjectTypeInstantiationFromValue()
+    {
+        $resolver = new DependencyResolver();
+        $method = new ReflectionMethod(DependencyResolverTestController::class, 'inputTestThree');
+        $parameter = $method->getParameters()[0];
+        $value = $resolver->resolve($parameter, [
+            'id' => 15
+        ]);
+        $this->assertInstanceOf(FakeEntity::class, $value);
+        $this->assertAttributeEquals(15, 'id', $value);
+    }
 }
 
 class DependencyResolverTestController {
     public function __construct(ServerRequestInterface $request) {}
     public function inputTest(int $input){}
     public function inputTestTwo(string $name, int $id, ResponseInterface $response, $cat = 'Merlin'){}
+    public function inputTestThree(FakeEntity $id){}
+}
+
+class FakeEntity {
+    /**
+     * @var int
+     */
+    public $id;
+    
+    public function __construct(int $id)
+    {
+        $this->id = $id;
+    }
 }
