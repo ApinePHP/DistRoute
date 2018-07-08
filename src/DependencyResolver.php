@@ -11,6 +11,7 @@ namespace Apine\DistRoute;
 
 use Psr\Container\ContainerInterface;
 use ReflectionParameter;
+use ReflectionType;
 
 /**
  * This class resolve parameters into their corresponding value
@@ -20,7 +21,7 @@ use ReflectionParameter;
 class DependencyResolver
 {
     /**
-     * @var ContainerInterface
+     * @var ContainerInterface|null
      */
     private $container;
     
@@ -47,7 +48,7 @@ class DependencyResolver
         $type = $parameter->getType();
     
         if (isset($arguments[$name])) {
-            if ($type !== null && !$type->isBuiltin()) {
+            if (self::isReflectionType($type)) {
                 $class = (string)$type;
                 $value = new $class($arguments[$name]);
             } else {
@@ -58,7 +59,7 @@ class DependencyResolver
     
             if (
                 $this->container instanceof ContainerInterface &&
-                ($type !== null && !$type->isBuiltin()) &&
+                self::isReflectionType($type) &&
                 $this->container->has($name)
             ) {
                 $value = $this->container->get($name);
@@ -75,5 +76,18 @@ class DependencyResolver
         }
         
         return $value;
+    }
+    
+    /**
+     * @param mixed $type
+     *
+     * @return bool
+     */
+    private static function isReflectionType($type): bool
+    {
+        return (
+            $type instanceof ReflectionType &&
+            !$type->isBuiltin()
+        );
     }
 }

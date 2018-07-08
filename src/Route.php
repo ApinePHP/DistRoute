@@ -13,6 +13,7 @@ use Closure;
 use Exception;
 use ReflectionClass;
 use ReflectionFunction;
+use ReflectionFunctionAbstract;
 use ReflectionMethod;
 use RuntimeException;
 use Psr\Container\ContainerInterface;
@@ -108,7 +109,7 @@ final class Route
     {
         preg_match_all('/\{(\??)(\w+?)(:(\(.+?\)))?\}/', $pattern, $matches, PREG_SET_ORDER);
         
-        return array_map(function ($match) {
+        return array_map(function (array $match): ParameterDefinition {
             $parameter = new ParameterDefinition($match[2], '([^\/]+?)');
             
             if (isset($match[4])) {
@@ -133,7 +134,7 @@ final class Route
         $regex = '/^' . str_ireplace('/', '\\/', $this->pattern) . '$/';
         $parameters = $this->parseParameters($this->pattern);
         
-        array_walk($parameters, function (ParameterDefinition $parameter) use (&$regex) {
+        array_walk($parameters, function (ParameterDefinition $parameter) use (&$regex): void {
             if ($parameter->optional) {
                 $match = '/\\\\\\/\{\?' . $parameter->name . '(:(\(.+?\)))?\}/'; // Five backshashes to match a single backslash, really????? At least it works that way... right?
                 $regex = preg_replace($match, '(\/' . $parameter->pattern . ')?', $regex);
@@ -200,6 +201,24 @@ final class Route
     }
     
     /**
+     * @param ReflectionFunctionAbstract          $reflection
+     * @param array                               $queryArguments
+     * @param \Apine\DistRoute\DependencyResolver $resolver
+     *
+     * @return array
+     */
+    private function resolveParameters(ReflectionFunctionAbstract $reflection, array $queryArguments, DependencyResolver $resolver): array
+    {
+        $methodArguments = [];
+        
+        foreach ($reflection->getParameters() as $parameter) {
+            $methodArguments[$parameter->getName()] = $resolver->resolve($parameter, $queryArguments);
+        }
+        
+        return $methodArguments;
+    }
+    
+    /**
      * Execute the handler
      *
      * @param ServerRequestInterface  $request
@@ -211,14 +230,20 @@ final class Route
     public function invoke(ServerRequestInterface $request, ContainerInterface $container = null): ResponseInterface
     {
         $requestString = $request->getUri()->getPath();
-        $hasController = false;
         $resolver = new DependencyResolver($container);
         
         $queryArguments = $this->extractArguments($requestString);
         
         if (is_callable($this->callable)) {
-            $reflectionMethod = new ReflectionFunction($this->callable);
+            $closure = Closure::fromCallable($this->callable);
+            $reflectionMethod = new ReflectionFunction($closure);
+            
+            $methodArguments = $this->resolveParameters($reflectionMethod, $queryArguments, $resolver);
+            
+            $response = $reflectionMethod->invokeArgs($methodArguments);
         } else if (is_string($this->callable)) {
+            $controller = null;
+            
             if (strpos($this->callable, '@')) {
                 [$controllerName, $method] = explode('@', $this->callable);
         
@@ -235,27 +260,22 @@ final class Route
     
                     $controller = $reflectionClass->newInstanceArgs($constructorArguments);
                     $reflectionMethod = new ReflectionMethod($controller, $method);
-                    $hasController = true;
                 } else {
                     throw new RuntimeException(sprintf('Method %s::%s not found', $controllerName, $method));
                 }
             } else {
                 $reflectionMethod = new ReflectionFunction($this->callable);
             }
+    
+            $methodArguments = $this->resolveParameters($reflectionMethod, $queryArguments, $resolver);
+    
+            if (null !== $controller) {
+                $response = $reflectionMethod->invokeArgs($controller, $methodArguments);
+            } else {
+                $response = $reflectionMethod->invokeArgs($methodArguments);
+            }
         } else {
             throw new RuntimeException('The callable must be an instance of Closure or a reference to a controller class');
-        }
-        
-        $methodArguments = [];
-        
-        foreach ($reflectionMethod->getParameters() as $parameter) {
-            $methodArguments[$parameter->getName()] = $resolver->resolve($parameter, $queryArguments);
-        }
-    
-        if ($hasController && $controller !== null) {
-            $response = $reflectionMethod->invokeArgs($controller, $methodArguments);
-        } else {
-            $response = $reflectionMethod->invokeArgs($methodArguments);
         }
     
         if (!($response instanceof ResponseInterface)) {

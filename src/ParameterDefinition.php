@@ -12,13 +12,22 @@ namespace Apine\DistRoute;
 
 final class ParameterDefinition
 {
+    /**
+     * @var string
+     */
     public $name;
     
+    /**
+     * @var string
+     */
     public $pattern;
     
+    /**
+     * @var bool
+     */
     public $optional = false;
     
-    public function __construct($name, $pattern)
+    public function __construct(string $name, string $pattern)
     {
         $this->name = $name;
         $this->pattern = $pattern;

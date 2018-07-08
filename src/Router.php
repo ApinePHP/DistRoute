@@ -35,7 +35,7 @@ final class Router implements RouterInterface
     /**
      * DI Container
      *
-     * @var ContainerInterface
+     * @var ContainerInterface|null
      */
     private $container;
     
@@ -44,8 +44,11 @@ final class Router implements RouterInterface
      *
      * @var string
      */
-    private $basePattern;
+    private $basePattern = '';
     
+    /**
+     * @var array
+     */
     public static $verbs = [
         'GET',
         'POST',
@@ -57,7 +60,7 @@ final class Router implements RouterInterface
     ];
     
     /**
-     * @param ContainerInterface $container
+     * @param ContainerInterface|null $container
      */
     public function __construct(ContainerInterface $container = null)
     {
